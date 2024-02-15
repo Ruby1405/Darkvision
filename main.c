@@ -161,18 +161,16 @@ void UpdateDrawFrame()
     {
         for (short y = 0; y < gameBoardGridHeight; y++)
         {
-            bool isMouseOver = 
-                fabs(mousePositionX - x * tileSize) <= mouseSensitivityDistance &&
-                fabs(mousePositionY - y * tileSize) <= mouseSensitivityDistance;
-
-            DrawPoly(
-                (Vector2){x * tileSize, y * tileSize}, 
-                4, 
-                3 + (isMouseOver * (mouseSensitivityDistance - 3)), 
-                0, 
-                BLACK
-            );   
+            DrawPoly((Vector2){x * tileSize, y * tileSize}, 4, 3, 0, BLACK);   
         }
+    }
+    
+    // Draw highlighted wall node
+    if (isMouseOverCorner)
+    {
+        DrawPoly(
+            (Vector2){mouseGridPosX * tileSize, mouseGridPosY * tileSize}, 
+            4, mouseSensitivityDistance, 0, PURPLE );
     }
 
     // Draw walls that exist
@@ -183,8 +181,7 @@ void UpdateDrawFrame()
             DrawLineEx(
                 (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
                 (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
-                3,
-                BLACK
+                3, BLACK
             );
         }
     }
@@ -201,8 +198,8 @@ void UpdateDrawFrame()
     }
 
     // Debug text
-    DrawText(TextFormat("(%d %% %d) - %d = %d \n\n\n\n%d", mousePositionX, (int)tileSize, mouseSensitivityDistance, ((mousePositionX + mouseSensitivityDistance)% (int)tileSize), isMouseOverCorner), 10, 10, 50, RED);
-    DrawText(TextFormat("%d", wallPlacementStarted), 10, 150, 50, RED);
+    // DrawText(TextFormat("(%d %% %d) - %d = %d \n\n\n\n%d", mousePositionX, (int)tileSize, mouseSensitivityDistance, ((mousePositionX + mouseSensitivityDistance)% (int)tileSize), isMouseOverCorner), 10, 10, 50, RED);
+    // DrawText(TextFormat("%d", wallPlacementStarted), 10, 150, 50, RED);
 
     EndDrawing();
 }
