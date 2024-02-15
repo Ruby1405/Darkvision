@@ -56,6 +56,7 @@ typedef struct Wall
 const short maxWallCount = 500;
 WALL walls[500];
 short wallIndex = 0;
+short selectedWallIndex = -1;
 
 // Game loop
 void UpdateDrawFrame()
@@ -76,6 +77,26 @@ void UpdateDrawFrame()
     case NONE:
         break;
     case PLACEWALLS:
+        if (!wallPlacementStarted)
+        {
+            selectedWallIndex = -1;
+            for (short i = 0; i < maxWallCount; i++)
+            {
+                if (walls[i].exists)
+                {
+                    if (CheckCollisionPointLine(
+                            (Vector2){mousePositionX, mousePositionY},
+                            (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
+                            (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
+                            mouseSensitivityDistance))
+                    {
+                        selectedWallIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             if (isMouseOverCorner)
@@ -150,6 +171,11 @@ void UpdateDrawFrame()
                 walls[wallIndex].exists = false;
                 wallPlacementStarted = false;
             }
+            else if (selectedWallIndex != -1)
+            {
+                // Remove the wall
+                walls[selectedWallIndex].exists = false;
+            }
         }
     }
 
@@ -181,7 +207,7 @@ void UpdateDrawFrame()
             DrawLineEx(
                 (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
                 (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
-                3, BLACK
+                3, i == selectedWallIndex ? RED : BLACK
             );
         }
     }
