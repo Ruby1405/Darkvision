@@ -10,15 +10,15 @@
 #include <emscripten/emscripten.h>
 
 // Compilation
-// emcc -o game.html main.c -Os -Wall /opt/webRaylib/raylib-master/src/web/libraylib.a -I. -I /opt/webRaylib/raylib-master/src -L. -L /opt/webRaylib/raylib-master/src/web -s USE_GLFW=3 --shell-file ./shell.html -DPLATFORM_WEB -sGL_ENABLE_GET_PROC_ADDRESS
+// emcc -o game.html main.c -Os -Wall /opt/webRaylib/raylib-master/src/web/libraylib.a -I. -I /opt/webRaylib/raylib-master/src -L. -L /opt/webRaylib/raylib-master/src/web -s USE_GLFW=3 --shell-file ./shell.html -DPLATFORM_WEB -sGL_ENABLE_GET_PROC_ADDRESS --preload-file mapImages -s ALLOW_MEMORY_GROWTH=1
 
 // Screen dimensions
 int screenWidth = 1000;
 int screenHeight = 1000;
 
 // Game board grid dimensions
-short gameBoardGridWidth = 50;
-short gameBoardGridHeight = 50;
+short gameBoardGridWidth = 16;
+short gameBoardGridHeight = 28;
 
 // Tile size (automatically calculated)
 float tileSize = 20;
@@ -57,6 +57,9 @@ const short maxWallCount = 500;
 WALL walls[500];
 short wallIndex = 0;
 short selectedWallIndex = -1;
+
+// Map texture
+Texture2D mapTexture;
 
 // Game loop
 void UpdateDrawFrame()
@@ -181,6 +184,8 @@ void UpdateDrawFrame()
 
     BeginDrawing();
     ClearBackground(RAYWHITE);
+
+    DrawTextureEx(mapTexture, (Vector2){0, 0}, 0, 0.5, WHITE);
     
     // Draw wall nodes (tile corners)
     for (short x = 0; x < gameBoardGridWidth; x++)
@@ -207,7 +212,7 @@ void UpdateDrawFrame()
             DrawLineEx(
                 (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
                 (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
-                3, i == selectedWallIndex ? RED : BLACK
+                3, i == selectedWallIndex ? RED : GREEN
             );
         }
     }
@@ -233,17 +238,24 @@ void UpdateDrawFrame()
 int main ()
 {
     // Initialize variables
-    tileSize = 
-        (screenWidth / gameBoardGridWidth) * (screenWidth <= screenHeight) +
-        (screenHeight / gameBoardGridHeight) * (screenWidth > screenHeight);
 
     for (short i = 0; i < maxWallCount; i++)
     {
         walls[i].exists = false;
     }
 
-    // Initialization
     InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+
+    mapTexture = LoadTexture("mapImages/The_handy_hag_upstairs.png");
+
+    screenWidth = mapTexture.width/2;
+    screenHeight = mapTexture.height/2;
+
+    SetWindowSize(screenWidth, screenHeight);
+    
+    tileSize = 
+        (screenWidth / gameBoardGridWidth) * (screenWidth <= screenHeight) +
+        (screenHeight / gameBoardGridHeight) * (screenWidth > screenHeight);
 
     // Start the main loop
     emscripten_set_main_loop(UpdateDrawFrame, 0, 1);
