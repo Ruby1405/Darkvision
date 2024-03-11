@@ -155,6 +155,7 @@ void UpdateDrawFrame()
                     }
                     else
                     {
+                        selectedWallIndex = -1;
                         // Make a new wall
                         walls[wallIndex].startX = mouseGridPosX;
                         walls[wallIndex].startY = mouseGridPosY;
