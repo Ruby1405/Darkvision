@@ -66,6 +66,26 @@ short selectedWallIndex = -1;
 // Map texture
 Texture2D mapTexture;
 
+inline int max(int a, int b)
+{
+    return (a > b) * a + (a <= b) * b;
+}
+
+inline int min(int a, int b)
+{
+    return (a < b) * a + (a >= b) * b;
+}
+
+// Point rectangle collision
+inline bool PointRectCollision(int x, int y, int rx, int ry, int rx2, int ry2)
+{
+    return
+        x >= min(rx, rx2) &&
+        x <= max(rx, rx2) &&
+        y >= min(ry, ry2) &&
+        y <= max(ry, ry2);
+}
+
 // Game loop
 void UpdateDrawFrame()
 {
@@ -94,20 +114,52 @@ void UpdateDrawFrame()
                 {
                     if (walls[i].state)
                     {
-                        char temp = 0;
-                        Vector2 a1 = (Vector2){walls[i].startX, walls[i].startY};
-                        Vector2 a2 = (Vector2){walls[i].endX, walls[i].endY};
-                        temp += CheckCollisionLines(a1, a2, (Vector2){mousePositionXOld, mousePositionY}, (Vector2){mousePositionX, mousePositionY}, NULL);
-                        temp += CheckCollisionLines(a1, a2, (Vector2){mousePositionX, mousePositionYOld}, (Vector2){mousePositionX, mousePositionY}, NULL);
-                        temp += CheckCollisionLines(a1, a2, (Vector2){mousePositionXOld, mousePositionYOld}, (Vector2){mousePositionX, mousePositionYOld}, NULL);
-                        temp += CheckCollisionLines(a1, a2, (Vector2){mousePositionXOld, mousePositionYOld}, (Vector2){mousePositionXOld, mousePositionY}, NULL);
-                        if (temp > 0)
+                        walls[i].state = 1;
+
+                        // First pass: Rectangle - point collision wall start
+                        if (PointRectCollision(
+                            walls[i].startX * tileSize, walls[i].startY * tileSize,
+                            mousePositionXOld, mousePositionYOld,
+                            mousePositionX, mousePositionY
+                        ))
                         {
                             walls[i].state = 2;
+                            continue;
                         }
-                        else
+
+                        // Second pass: Rectangle - point collision wall end
+                        if (PointRectCollision(
+                            walls[i].endX * tileSize, walls[i].endY * tileSize,
+                            mousePositionXOld, mousePositionYOld,
+                            mousePositionX, mousePositionY
+                        ))
                         {
-                            walls[i].state = 1;
+                            walls[i].state = 2;
+                            continue;
+                        }
+
+                        // Third pass: Line - Line collision for three box edges
+                        Vector2 boxEdges[4] = {
+                            (Vector2){mousePositionXOld, mousePositionYOld},
+                            (Vector2){mousePositionX, mousePositionYOld},
+                            (Vector2){mousePositionX, mousePositionY},
+                            (Vector2){mousePositionXOld, mousePositionY}
+                        };
+
+                        Vector2 wallStartVector = (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize};
+                        Vector2 wallEndVector = (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize};
+
+                        for (short ii = 0; ii < 3; ii++)
+                        {
+                            if (CheckCollisionLines(
+                                boxEdges[ii], boxEdges[ii + 1],
+                                wallStartVector, wallEndVector,
+                                NULL
+                            ))
+                            {
+                                walls[i].state = 2;
+                                break;
+                            }
                         }
                     }
                 }
@@ -208,11 +260,8 @@ void UpdateDrawFrame()
                 walls[wallIndex].state = 0;
                 wallPlacementStarted = false;
             }
-            else
-            {
-                mousePositionXOld = mousePositionX;
-                mousePositionYOld = mousePositionY;
-            }
+            mousePositionXOld = mousePositionX;
+            mousePositionYOld = mousePositionY;
         }
         if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
         {
@@ -226,7 +275,14 @@ void UpdateDrawFrame()
         {
             if (boxSelectionStarted)
             {
-                // Select walls in the box
+                // delete selected walls 
+                for (short i = 0; i < maxWallCount; i++)
+                {
+                    if (walls[i].state == 2)
+                    {
+                        walls[i].state = 0;
+                    }
+                }
                 boxSelectionStarted = false;
             }
             else if (selectedWallIndex != -1)
