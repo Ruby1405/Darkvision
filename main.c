@@ -28,6 +28,9 @@ int mouseSensitivityDistance = 6;
 // Mouse position
 int mousePositionX = 0;
 int mousePositionY = 0;
+int mousePositionXOld = 0;
+int mousePositionYOld = 0;
+
 // If the mouse is over a corner/wall node
 bool isMouseOverCorner = false;
 
@@ -41,11 +44,13 @@ MAPEDITORMODE mapEditorMode = PLACEWALLS;
 
 // If the first vertex of a wall has been placed
 bool wallPlacementStarted = false;
+// If box selection has been started
+bool boxSelectionStarted = false;
 
 // Wall struct
 typedef struct Wall
 {
-    bool exists;
+    char state; // 0 = not placed, 1 = placed, 2 = selected
     short startX;
     short startY;
     short endX;
@@ -60,6 +65,26 @@ short selectedWallIndex = -1;
 
 // Map texture
 Texture2D mapTexture;
+
+inline int max(int a, int b)
+{
+    return (a > b) * a + (a <= b) * b;
+}
+
+inline int min(int a, int b)
+{
+    return (a < b) * a + (a >= b) * b;
+}
+
+// Point rectangle collision
+inline bool PointRectCollision(int x, int y, int rx, int ry, int rx2, int ry2)
+{
+    return
+        x >= min(rx, rx2) &&
+        x <= max(rx, rx2) &&
+        y >= min(ry, ry2) &&
+        y <= max(ry, ry2);
+}
 
 // Game loop
 void UpdateDrawFrame()
@@ -82,19 +107,79 @@ void UpdateDrawFrame()
     case PLACEWALLS:
         if (!wallPlacementStarted)
         {
-            selectedWallIndex = -1;
-            for (short i = 0; i < maxWallCount; i++)
+            if (boxSelectionStarted)
             {
-                if (walls[i].exists)
+                // Select walls in the box
+                for (short i = 0; i < maxWallCount; i++)
                 {
-                    if (CheckCollisionPointLine(
-                            (Vector2){mousePositionX, mousePositionY},
-                            (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
-                            (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
-                            mouseSensitivityDistance))
+                    if (walls[i].state)
                     {
-                        selectedWallIndex = i;
-                        break;
+                        walls[i].state = 1;
+
+                        // First pass: Rectangle - point collision wall start
+                        if (PointRectCollision(
+                            walls[i].startX * tileSize, walls[i].startY * tileSize,
+                            mousePositionXOld, mousePositionYOld,
+                            mousePositionX, mousePositionY
+                        ))
+                        {
+                            walls[i].state = 2;
+                            continue;
+                        }
+
+                        // Second pass: Rectangle - point collision wall end
+                        if (PointRectCollision(
+                            walls[i].endX * tileSize, walls[i].endY * tileSize,
+                            mousePositionXOld, mousePositionYOld,
+                            mousePositionX, mousePositionY
+                        ))
+                        {
+                            walls[i].state = 2;
+                            continue;
+                        }
+
+                        // Third pass: Line - Line collision for three box edges
+                        Vector2 boxEdges[4] = {
+                            (Vector2){mousePositionXOld, mousePositionYOld},
+                            (Vector2){mousePositionX, mousePositionYOld},
+                            (Vector2){mousePositionX, mousePositionY},
+                            (Vector2){mousePositionXOld, mousePositionY}
+                        };
+
+                        Vector2 wallStartVector = (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize};
+                        Vector2 wallEndVector = (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize};
+
+                        for (short ii = 0; ii < 3; ii++)
+                        {
+                            if (CheckCollisionLines(
+                                boxEdges[ii], boxEdges[ii + 1],
+                                wallStartVector, wallEndVector,
+                                NULL
+                            ))
+                            {
+                                walls[i].state = 2;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                selectedWallIndex = -1;
+                for (short i = 0; i < maxWallCount; i++)
+                {
+                    if (walls[i].state)
+                    {
+                        if (CheckCollisionPointLine(
+                                (Vector2){mousePositionX, mousePositionY},
+                                (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
+                                (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
+                                mouseSensitivityDistance))
+                        {
+                            selectedWallIndex = i;
+                            break;
+                        }
                     }
                 }
             }
@@ -114,7 +199,7 @@ void UpdateDrawFrame()
                     bool wallFound = false;
                     for (short i = 0; i < maxWallCount; i++)
                     {
-                        if (!walls[i].exists)
+                        if (!walls[i].state)
                         {
                             wallIndex = i;
                             wallFound = true;
@@ -133,7 +218,7 @@ void UpdateDrawFrame()
                         walls[wallIndex].startY = mouseGridPosY;
                         walls[wallIndex].endX = mouseGridPosX;
                         walls[wallIndex].endY = mouseGridPosY;
-                        walls[wallIndex].exists = true;
+                        walls[wallIndex].state = 1;
                     }
                 }
                 else
@@ -142,7 +227,7 @@ void UpdateDrawFrame()
                     bool wallFound = false;
                     for (short i = 0; i < maxWallCount; i++)
                     {
-                        if (!walls[i].exists)
+                        if (!walls[i].state)
                         {
                             wallIndex = i;
                             wallFound = true;
@@ -161,7 +246,7 @@ void UpdateDrawFrame()
                         walls[wallIndex].startY = mouseGridPosY;
                         walls[wallIndex].endX = mouseGridPosX;
                         walls[wallIndex].endY = mouseGridPosY;
-                        walls[wallIndex].exists = true;
+                        walls[wallIndex].state = 1;
                         wallPlacementStarted = true;
                     }
                 }
@@ -172,13 +257,38 @@ void UpdateDrawFrame()
             if (wallPlacementStarted)
             {
                 // Stop placing the wall
-                walls[wallIndex].exists = false;
+                walls[wallIndex].state = 0;
                 wallPlacementStarted = false;
+            }
+            mousePositionXOld = mousePositionX;
+            mousePositionYOld = mousePositionY;
+        }
+        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+        {
+            if (abs(mousePositionX - mousePositionXOld) > mouseSensitivityDistance ||
+                abs(mousePositionY - mousePositionYOld) > mouseSensitivityDistance)
+            {
+                boxSelectionStarted = true;
+            }
+        }
+        if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
+        {
+            if (boxSelectionStarted)
+            {
+                // delete selected walls 
+                for (short i = 0; i < maxWallCount; i++)
+                {
+                    if (walls[i].state == 2)
+                    {
+                        walls[i].state = 0;
+                    }
+                }
+                boxSelectionStarted = false;
             }
             else if (selectedWallIndex != -1)
             {
                 // Remove the wall
-                walls[selectedWallIndex].exists = false;
+                walls[selectedWallIndex].state = 0;
             }
         }
     }
@@ -208,12 +318,12 @@ void UpdateDrawFrame()
     // Draw walls that exist
     for (short i = 0; i < maxWallCount; i++)
     {
-        if(walls[i].exists)
+        if(walls[i].state)
         {
             DrawLineEx(
                 (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
                 (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
-                3, i == selectedWallIndex ? RED : GREEN
+                3, i == selectedWallIndex || walls[i].state == 2 ? RED : GREEN
             );
         }
     }
@@ -225,6 +335,25 @@ void UpdateDrawFrame()
             (Vector2){walls[wallIndex].startX * tileSize, walls[wallIndex].startY * tileSize},
             (Vector2){mousePositionX, mousePositionY},
             3,
+            PURPLE
+        );
+    }
+
+    // Draw box selection
+    if (boxSelectionStarted)
+    {
+        DrawRectangle(
+            mousePositionXOld * (mousePositionXOld <= mousePositionX) + mousePositionX * (mousePositionXOld > mousePositionX),
+            mousePositionYOld * (mousePositionYOld <= mousePositionY) + mousePositionY * (mousePositionYOld > mousePositionY),
+            (mousePositionX - mousePositionXOld) * (mousePositionXOld <= mousePositionX) + (mousePositionXOld - mousePositionX) * (mousePositionXOld > mousePositionX),
+            (mousePositionY - mousePositionYOld) * (mousePositionYOld <= mousePositionY) + (mousePositionYOld - mousePositionY) * (mousePositionYOld > mousePositionY),
+            Fade(PURPLE, 0.4)
+        );
+        DrawRectangleLines(
+            mousePositionXOld * (mousePositionXOld <= mousePositionX) + mousePositionX * (mousePositionXOld > mousePositionX),
+            mousePositionYOld * (mousePositionYOld <= mousePositionY) + mousePositionY * (mousePositionYOld > mousePositionY),
+            (mousePositionX - mousePositionXOld) * (mousePositionXOld <= mousePositionX) + (mousePositionXOld - mousePositionX) * (mousePositionXOld > mousePositionX),
+            (mousePositionY - mousePositionYOld) * (mousePositionYOld <= mousePositionY) + (mousePositionYOld - mousePositionY) * (mousePositionYOld > mousePositionY),
             PURPLE
         );
     }
@@ -242,7 +371,7 @@ int main ()
 
     for (short i = 0; i < maxWallCount; i++)
     {
-        walls[i].exists = false;
+        walls[i].state = 0;
     }
 
     InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
