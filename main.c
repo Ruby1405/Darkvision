@@ -371,15 +371,15 @@ void UpdateDrawFrame()
 EMSCRIPTEN_KEEPALIVE
 Color ChangeWallColor()
 {
-    if (wallCollor == GREEN)
+    if (wallColor == GREEN)
     {
-        wallCollor = BLUE;
+        wallColor = BLUE;
     }
     else
     {
-        wallCollor = GREEN;
+        wallColor = GREEN;
     }
-    return wallCollor;
+    return wallColor;
 }
 
 int main ()
