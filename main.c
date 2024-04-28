@@ -58,7 +58,7 @@ typedef struct Wall
 } WALL;
 
 // Wall color
-Color wallColor = GREEN;
+bool wallColorToggle = true;
 
 // Wall variable
 const short maxWallCount = 500;
@@ -323,6 +323,7 @@ void UpdateDrawFrame()
     {
         if(walls[i].state)
         {
+            Color wallColor = wallColorToggle ? GREEN : BLUE;
             DrawLineEx(
                 (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
                 (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
@@ -369,17 +370,10 @@ void UpdateDrawFrame()
 }
 
 EMSCRIPTEN_KEEPALIVE
-Color ChangeWallColor()
+bool ChangeWallColor()
 {
-    if (wallColor == GREEN)
-    {
-        wallColor = BLUE;
-    }
-    else
-    {
-        wallColor = GREEN;
-    }
-    return wallColor;
+    wallColorToggle = !wallColorToggle;
+    return wallColorToggle;
 }
 
 int main ()
