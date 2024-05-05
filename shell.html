@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 
-    <title>raylib web game</title>
+    <title>Darkvision</title>
 
     <meta name="title" content="raylib web game">
     <meta name="description" content="New raylib web videogame, developed using raylib videogames library">
@@ -20,15 +20,6 @@
     <meta property="og:site_name" content="raylib - example">
     <meta property="og:url" content="https://www.raylib.com/games.html">
     <meta property="og:description" content="New raylib web videogame, developed using raylib videogames library">
-
-    <!-- Twitter metatags for sharing -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:site" content="@raysan5">
-    <meta name="twitter:title" content="raylib web game">
-    <meta name="twitter:image" content="https://www.raylib.com/common/raylib_logo.png">
-    <meta name="twitter:image:alt" content="New raylib web videogame, developed using raylib videogames library">
-    <meta name="twitter:url" content="https://www.raylib.com/games.html">
-    <meta name="twitter:description" content="New raylib web videogame, developed using raylib videogames library">
 
     <!-- Favicon -->
     <link rel="shortcut icon" href="https://www.raylib.com/favicon.ico">
@@ -59,7 +50,7 @@
     </head>
     <body>
         <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
-        <p id="output" />
+        <p id="output"> </p>
         <script>
             var Module = {
                 print: (function() {
@@ -81,5 +72,18 @@
             };
         </script>
         {{{ SCRIPT }}}
+        <script>
+            function wallChange() {
+                var result = Module.ccall(
+                    "ChangeWallColor",
+                    "boolean",
+                    null,
+                    null
+                );
+                console.log("Wall color changed: " + result);
+            }
+        </script>
+
+        <button onclick="wallChange()" >Click moi</button>
     </body>
 </html>
