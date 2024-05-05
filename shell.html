@@ -11,23 +11,11 @@
     <meta name="keywords" content="raylib, programming, examples, html5, C, C++, library, learn, games, videogames">
     <meta name="viewport" content="width=device-width">
 
-    <!-- Open Graph metatags for sharing -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="raylib web game">
-    <meta property="og:image:type" content="image/png">
-    <meta property="og:image" content="https://www.raylib.com/common/raylib_logo.png">
-    <meta property="og:image:alt" content="New raylib web videogame, developed using raylib videogames library" />
-    <meta property="og:site_name" content="raylib - example">
-    <meta property="og:url" content="https://www.raylib.com/games.html">
-    <meta property="og:description" content="New raylib web videogame, developed using raylib videogames library">
-
     <!-- Favicon -->
     <link rel="shortcut icon" href="https://www.raylib.com/favicon.ico">
 
-    <style>
-        body { margin: 0px; }
-        canvas.emscripten { border: 0px none; background-color: black; }
-    </style>
+    <link rel="stylesheet" href="style.css"></link>
+
     <script type='text/javascript' src="https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js/dist/FileSaver.min.js"> </script>
     <script type='text/javascript'>
         function saveFileFromMEMFSToDisk(memoryFSname, localFSname)     // This can be called by C/C++ code
@@ -49,7 +37,18 @@
     </script>
     </head>
     <body>
-        <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+        <header>
+            <h1>DARKVISION</h1>
+        </header>
+        <div class="mainGrid">
+            <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+
+            <div class="sideGrid">
+                <button onclick="wallChange()" >Toggle Wall Colour</button>
+                <button onclick="toggleMapMode()">Toggle Map Mode</button>
+            </div>
+        </div>
+
         <p id="output"> </p>
         <script>
             var Module = {
@@ -60,8 +59,8 @@
                         if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
                         console.log(text);
                         if (element) {
-                          element.value += text + "\n";
-                          element.scrollTop = element.scrollHeight; // focus on bottom
+                        element.value += text + "\n";
+                        element.scrollTop = element.scrollHeight; // focus on bottom
                         }
                     };
                 })(),
@@ -83,7 +82,5 @@
                 console.log("Wall color changed: " + result);
             }
         </script>
-
-        <button onclick="wallChange()" >Click moi</button>
     </body>
 </html>
