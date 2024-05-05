@@ -81,6 +81,15 @@
                 );
                 console.log("Wall color changed: " + result);
             }
+            function toggleMapMode() {
+                var result = Module.ccall(
+                    "ChangeMapMode",
+                    "boolean",
+                    null,
+                    null
+                );
+                console.log("Map mode toggled: " + result);
+            }
         </script>
     </body>
 </html>
