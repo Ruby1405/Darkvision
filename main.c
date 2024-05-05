@@ -10,7 +10,7 @@
 #include <emscripten/emscripten.h>
 
 // Compilation
-// emcc -o game.html main.c -Os -Wall /opt/webRaylib/raylib-master/src/web/libraylib.a -I. -I /opt/webRaylib/raylib-master/src -L. -L /opt/webRaylib/raylib-master/src/web -s USE_GLFW=3 --shell-file ./shell.html -DPLATFORM_WEB -sGL_ENABLE_GET_PROC_ADDRESS --preload-file mapImages -s ALLOW_MEMORY_GROWTH=1
+// emcc -o game.html main.c -Os -Wall /opt/webRaylib/raylib-master/src/web/libraylib.a -I. -I /opt/webRaylib/raylib-master/src -L. -L /opt/webRaylib/raylib-master/src/web -s USE_GLFW=3 --shell-file ./shell.html -DPLATFORM_WEB -sGL_ENABLE_GET_PROC_ADDRESS --preload-file mapImages -s ALLOW_MEMORY_GROWTH=1 -s NO_EXIT_RUNTIME=1 -s 'EXPORTED_RUNTIME_METHODS=[ccall]'
 
 // Screen dimensions
 int screenWidth = 1000;
@@ -56,6 +56,9 @@ typedef struct Wall
     short endX;
     short endY;
 } WALL;
+
+// Wall color
+bool wallColorToggle = true;
 
 // Wall variable
 const short maxWallCount = 500;
@@ -320,10 +323,11 @@ void UpdateDrawFrame()
     {
         if(walls[i].state)
         {
+            Color wallColor = wallColorToggle ? GREEN : BLUE;
             DrawLineEx(
                 (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
                 (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
-                3, i == selectedWallIndex || walls[i].state == 2 ? RED : GREEN
+                3, i == selectedWallIndex || walls[i].state == 2 ? RED : wallColor
             );
         }
     }
@@ -363,6 +367,13 @@ void UpdateDrawFrame()
     // DrawText(TextFormat("%d", wallPlacementStarted), 10, 150, 50, RED);
 
     EndDrawing();
+}
+
+EMSCRIPTEN_KEEPALIVE
+bool ChangeWallColor()
+{
+    wallColorToggle = !wallColorToggle;
+    return wallColorToggle;
 }
 
 int main ()
