@@ -464,11 +464,11 @@ int main ()
     for (short i = 0; i < 5; i++)
     {
         tokens[i].state = 1;
-        tokens[i].x = GetRandomValue(0, gameBoardGridWidth - 1);
-        tokens[i].y = GetRandomValue(0, gameBoardGridHeight - 1);
+        tokens[i].x = i;
+        tokens[i].y = i;
         tokens[i].width = 1;
         tokens[i].height = 1;
-        tokens[i].color = (Color){GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), 255};
+        tokens[i].color = PINK;
     }
 
     InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
