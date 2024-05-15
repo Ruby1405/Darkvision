@@ -37,21 +37,28 @@ bool isMouseOverCorner = false;
 // Read the name
 typedef enum MAPEDITORMODE
 {
-    NONE,
-    PLACEWALLS,
-    PLAY
+    MAP_NONE,
+    MAP_PLACEWALLS,
+    MAP_PLAY
 } MAPEDITORMODE;
-MAPEDITORMODE mapEditorMode = PLACEWALLS;
+MAPEDITORMODE mapEditorMode = MAP_PLACEWALLS;
 
 // If the first vertex of a wall has been placed
 bool wallPlacementStarted = false;
 // If box selection has been started
 bool boxSelectionStarted = false;
 
+typedef enum WALLSTATE
+{
+    WALL_NONE,
+    WALL_PLACED,
+    WALL_MARKED
+} WALLSTATE;
+
 // Wall struct
 typedef struct Wall
 {
-    char state; // 0 = not placed, 1 = placed, 2 = selected
+    WALLSTATE state;
     short startX;
     short startY;
     short endX;
@@ -67,21 +74,69 @@ WALL walls[512];
 short placeWallIndex = 0;
 short selectedWallIndex = -1;
 
-// Token
+// Bitwise boolean conditions array
+typedef enum BITCONDITION
+{
+    CON_DEAD = 1,
+    CON_BLIND = 1<<1,
+    CON_CHARMED = 1<<2,
+    CON_DEAFENED = 1<<3,
+    CON_FRIGHTENED = 1<<4,
+    CON_GRAPPLED = 1<<5,
+    CON_INCAPACITATED = 1<<6,
+    CON_INVISIBLE = 1<<7,
+    CON_PARALYZED = 1<<8,
+    CON_PETRIFIED = 1<<9,
+    CON_POISONED = 1<<10,
+    CON_PRONE = 1<<11,
+    CON_RESTRAINED = 1<<12,
+    CON_STUNNED = 1<<13,
+    CON_UNCONSCIOUS = 1<<14,
+    CON_EXTRA_01 = 1<<15,
+    CON_EXTRA_02 = 1<<16,
+    CON_EXTRA_03 = 1<<17,
+    CON_EXTRA_04 = 1<<18,
+    CON_EXTRA_05 = 1<<19,
+    CON_EXTRA_06 = 1<<20,
+    CON_EXTRA_07 = 1<<21,
+    CON_EXTRA_08 = 1<<22,
+    CON_EXTRA_09 = 1<<23,
+    CON_EXTRA_10 = 1<<24,
+    CON_EXTRA_11 = 1<<25,
+    CON_EXTRA_12 = 1<<26,
+    CON_EXTRA_13 = 1<<27,
+    CON_EXTRA_14 = 1<<28,
+    CON_EXTRA_15 = 1<<29,
+    CON_EXTRA_16 = 1<<30,
+    CON_EXTRA_17 = 1<<31
+} BITCONDITION;
+
+typedef enum TOKENSTATE
+{
+    TOKEN_NONE,
+    TOKEN_PLACED,
+    TOKEN_HOVER,
+    TOKEN_SELECTED
+} TOKENSTATE;
+
+// Token struct
 typedef struct Token
 {
-    char state; // 0 = not placed, 1 = placed, 2 = selected
+    TOKENSTATE state;
     short x;
     short y;
-    short width;
-    short height;
+    char width;
+    char height;
+    uint32_t bitConditions;
     Color color;
 } TOKEN;
 
 // Token variable
 const short maxTokenCount = 512;
 TOKEN tokens[512];
-short tokenIndex = 0;
+short activeToken = 0;
+
+bool drawFov = false;
 
 // Map texture
 Texture2D mapTexture;
@@ -122,9 +177,9 @@ void UpdateDrawFrame()
 
     switch (mapEditorMode)
     {
-        case NONE:
+        case MAP_NONE:
             break;
-        case PLACEWALLS:
+        case MAP_PLACEWALLS:
         {
             if (!wallPlacementStarted)
             {
@@ -135,7 +190,7 @@ void UpdateDrawFrame()
                     {
                         if (walls[i].state)
                         {
-                            walls[i].state = 1;
+                            walls[i].state = WALL_PLACED;
 
                             // First pass: Rectangle - point collision wall start
                             if (PointRectCollision(
@@ -144,7 +199,7 @@ void UpdateDrawFrame()
                                 mousePositionX, mousePositionY
                             ))
                             {
-                                walls[i].state = 2;
+                                walls[i].state = WALL_MARKED;
                                 continue;
                             }
 
@@ -155,7 +210,7 @@ void UpdateDrawFrame()
                                 mousePositionX, mousePositionY
                             ))
                             {
-                                walls[i].state = 2;
+                                walls[i].state = WALL_MARKED;
                                 continue;
                             }
 
@@ -178,7 +233,7 @@ void UpdateDrawFrame()
                                     NULL
                                 ))
                                 {
-                                    walls[i].state = 2;
+                                    walls[i].state = WALL_MARKED;
                                     break;
                                 }
                             }
@@ -239,7 +294,7 @@ void UpdateDrawFrame()
                             walls[placeWallIndex].startY = mouseGridPosY;
                             walls[placeWallIndex].endX = mouseGridPosX;
                             walls[placeWallIndex].endY = mouseGridPosY;
-                            walls[placeWallIndex].state = 1;
+                            walls[placeWallIndex].state = WALL_PLACED;
                         }
                     }
                     else
@@ -267,7 +322,7 @@ void UpdateDrawFrame()
                             walls[placeWallIndex].startY = mouseGridPosY;
                             walls[placeWallIndex].endX = mouseGridPosX;
                             walls[placeWallIndex].endY = mouseGridPosY;
-                            walls[placeWallIndex].state = 1;
+                            walls[placeWallIndex].state = WALL_PLACED;
                             wallPlacementStarted = true;
                         }
                     }
@@ -278,7 +333,7 @@ void UpdateDrawFrame()
                 if (wallPlacementStarted)
                 {
                     // Stop placing the wall
-                    walls[placeWallIndex].state = 0;
+                    walls[placeWallIndex].state = WALL_NONE;
                     wallPlacementStarted = false;
                 }
                 mousePositionXOld = mousePositionX;
@@ -299,9 +354,9 @@ void UpdateDrawFrame()
                     // delete selected walls 
                     for (short i = 0; i < maxWallCount; i++)
                     {
-                        if (walls[i].state == 2)
+                        if (walls[i].state == WALL_MARKED)
                         {
-                            walls[i].state = 0;
+                            walls[i].state = WALL_NONE;
                         }
                     }
                     boxSelectionStarted = false;
@@ -309,13 +364,91 @@ void UpdateDrawFrame()
                 else if (selectedWallIndex != -1)
                 {
                     // Remove the wall
-                    walls[selectedWallIndex].state = 0;
+                    walls[selectedWallIndex].state = WALL_NONE;
                 }
             }
             break;
         }
-        case PLAY:
+        case MAP_PLAY:
         {
+            // Select tokens
+            if (boxSelectionStarted)
+            {
+                // Select tokens in the box
+                for (short i = 0; i < maxTokenCount; i++)
+                {
+                    if (tokens[i].state)
+                    {
+                        if (tokens[i].state == TOKEN_SELECTED )
+                        {
+                            continue;
+                        }
+
+                        tokens[i].state = TOKEN_PLACED;
+
+                        if (CheckCollisionRecs(
+                            (Rectangle){
+                                min(mousePositionXOld, mousePositionX) * tileSize,
+                                min(mousePositionYOld, mousePositionY) * tileSize,
+                                abs(mousePositionX - mousePositionXOld) * tileSize,
+                                abs(mousePositionY - mousePositionYOld) * tileSize
+                            },
+                            (Rectangle){
+                                tokens[i].x * tileSize,
+                                tokens[i].y * tileSize,
+                                tokens[i].width * tileSize,
+                                tokens[i].height * tileSize
+                            }
+                        ))
+                        {
+                            tokens[i].state = TOKEN_HOVER;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for (short i = 0; i < maxTokenCount; i++)
+                {
+                    if (tokens[i].state == TOKEN_HOVER)
+                    {
+                        tokens[i].state = TOKEN_PLACED;
+                    }
+                    if (tokens[i].state == TOKEN_PLACED)
+                    {
+                        if (PointRectCollision(
+                            mousePositionX,
+                            mousePositionY,
+                            tokens[i].x * tileSize,
+                            tokens[i].y * tileSize,
+                            (tokens[i].x + tokens[i].width) * tileSize,
+                            (tokens[i].y + tokens[i].height) * tileSize
+                        ))
+                        {
+                            tokens[i].state = TOKEN_HOVER;
+                        }
+                    }
+                }
+            }
+            // if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            // {
+                
+            // }
+
+            if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
+            {
+                if (boxSelectionStarted)
+                {
+                    // select tokens in the box
+                    for (short i = 0; i < maxTokenCount; i++)
+                    {
+                        if (tokens[i].state == TOKEN_HOVER)
+                        {
+                            tokens[i].state = TOKEN_SELECTED;
+                        }
+                    }
+                }
+            }
             break;
         }
         default:
@@ -330,17 +463,42 @@ void UpdateDrawFrame()
     // Draw Tokens
     for (short i = 0; i < maxTokenCount; i++)
     {
-        if (tokens[i].state == 1)
+        switch (tokens[i].state)
+        {
+        case TOKEN_PLACED:
         {
             DrawRectangle(
                 tokens[i].x * tileSize, tokens[i].y * tileSize,
                 tokens[i].width * tileSize, tokens[i].height * tileSize,
+                BLACK
+            );
+            DrawRectangle(
+                (tokens[i].x * tileSize)+1, (tokens[i].y * tileSize)+1,
+                (tokens[i].width * tileSize)-2, (tokens[i].height * tileSize)-2,
+                tokens[i].color
+            );
+            break;
+        }
+        case TOKEN_HOVER:
+        {
+            DrawRectangle(
+                tokens[i].x * tileSize, tokens[i].y * tileSize,
+                tokens[i].width * tileSize, tokens[i].height * tileSize,
+                WHITE
+            );
+            DrawRectangle(
+                (tokens[i].x * tileSize)+1, (tokens[i].y * tileSize)+1,
+                (tokens[i].width * tileSize)-2, (tokens[i].height * tileSize)-2,
                 tokens[i].color
             );
         }
+        
+        default:
+            break;
+        }
     }
     
-    if (mapEditorMode == PLACEWALLS)
+    if (mapEditorMode == MAP_PLACEWALLS)
     {
         // Draw wall nodes (tile corners)
         for (short x = 0; x < gameBoardGridWidth; x++)
@@ -348,6 +506,7 @@ void UpdateDrawFrame()
             for (short y = 0; y < gameBoardGridHeight; y++)
             {
                 DrawPoly((Vector2){x * tileSize, y * tileSize}, 4, 3, 0, BLACK);   
+                DrawPoly((Vector2){x * tileSize, y * tileSize}, 4, 2, 0, WHITE);   
             }
         }
         
@@ -356,7 +515,10 @@ void UpdateDrawFrame()
         {
             DrawPoly(
                 (Vector2){mouseGridPosX * tileSize, mouseGridPosY * tileSize}, 
-                4, mouseSensitivityDistance, 0, PURPLE );
+                4, mouseSensitivityDistance, 0, BLACK );
+            DrawPoly(
+                (Vector2){mouseGridPosX * tileSize, mouseGridPosY * tileSize}, 
+                4, mouseSensitivityDistance - 1, 0, PINK );
         }
     }
 
@@ -380,7 +542,7 @@ void UpdateDrawFrame()
             DrawLineEx(
                 (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
                 (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
-                3, i == selectedWallIndex || walls[i].state == 2 ? RED : wallColor
+                3, i == selectedWallIndex || walls[i].state == WALL_MARKED ? RED : wallColor
             );
         }
     }
@@ -390,14 +552,14 @@ void UpdateDrawFrame()
     {
         DrawLineEx(
             (Vector2){walls[placeWallIndex].startX * tileSize, walls[placeWallIndex].startY * tileSize},
-            (Vector2){walls[placeWallIndex].endX * tileSize, walls[placeWallIndex].endY * tileSize},
+            (Vector2){mousePositionX, mousePositionY},
             5, BLACK
         );
         DrawLineEx(
             (Vector2){walls[placeWallIndex].startX * tileSize, walls[placeWallIndex].startY * tileSize},
             (Vector2){mousePositionX, mousePositionY},
             3,
-            PURPLE
+            PINK
         );
     }
 
@@ -437,14 +599,16 @@ bool ChangeWallColor()
 EMSCRIPTEN_KEEPALIVE
 bool ChangeMapMode()
 {
-    if (mapEditorMode == PLACEWALLS)
+    if (mapEditorMode == MAP_PLACEWALLS)
     {
-        mapEditorMode = NONE;
+        mapEditorMode = MAP_PLAY;
+        boxSelectionStarted = false;
         return true;
     }
     else
     {
-        mapEditorMode = PLACEWALLS;
+        mapEditorMode = MAP_PLACEWALLS;
+        boxSelectionStarted = false;
         return false;
     }
 }
@@ -453,21 +617,17 @@ int main ()
 {
     for (short i = 0; i < maxWallCount; i++)
     {
-        walls[i].state = 0;
-    }
-
-    for (short i = 0; i < maxTokenCount; i++)
-    {
-        tokens[i].state = 0;
+        walls[i].state = WALL_NONE;
     }
 
     for (short i = 0; i < 5; i++)
     {
-        tokens[i].state = 1;
+        tokens[i].state = TOKEN_PLACED;
         tokens[i].x = i;
         tokens[i].y = i;
         tokens[i].width = 1;
         tokens[i].height = 1;
+        tokens[i].bitConditions = 0u;
         tokens[i].color = PINK;
     }
 
