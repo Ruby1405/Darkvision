@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Tangerine:wght@700&display=swap');
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0px;
+}
+
+canvas.emscripten {
+    border: 0px none;
+    background-color: black;
+}
+
+header {
+    background: rgb(0,0,0);
+    background: linear-gradient(1deg, #000 0%, #000 25%, #600027 48%, #ff8eab 50%, #600027 52%, #000 75%, #000 100%);
+}
+
+h1 {
+    font-size: 48px;
+    color: #000;
+    text-shadow: #e0005a 0 0 2px;
+    font-weight: 100;
+    font-family: 'Cinzel', serif;
+    /* font-family: 'Tangerine', cursive; */
+    text-align: center;
+}
+
+.mainGrid {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-areas:
+        "canvas canvas"
+        "controls controls";
+}
