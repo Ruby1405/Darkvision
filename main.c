@@ -134,7 +134,7 @@ typedef struct Token
 // Token variable
 const short maxTokenCount = 512;
 TOKEN tokens[512];
-short activeToken = 0;
+short activeToken = -1;
 
 bool drawFov = false;
 
@@ -339,7 +339,7 @@ void UpdateDrawFrame()
                 mousePositionXOld = mousePositionX;
                 mousePositionYOld = mousePositionY;
             }
-            if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+            if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && !boxSelectionStarted)
             {
                 if (abs(mousePositionX - mousePositionXOld) > mouseSensitivityDistance ||
                     abs(mousePositionY - mousePositionYOld) > mouseSensitivityDistance)
@@ -430,11 +430,19 @@ void UpdateDrawFrame()
                     }
                 }
             }
-            // if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            // {
-                
-            // }
-
+            if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+            {
+                mousePositionXOld = mousePositionX;
+                mousePositionYOld = mousePositionY;
+            }
+            if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && !boxSelectionStarted)
+            {
+                if (abs(mousePositionX - mousePositionXOld) > mouseSensitivityDistance ||
+                    abs(mousePositionY - mousePositionYOld) > mouseSensitivityDistance)
+                {
+                    boxSelectionStarted = true;
+                }
+            }
             if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
             {
                 if (boxSelectionStarted)
@@ -446,6 +454,73 @@ void UpdateDrawFrame()
                         {
                             tokens[i].state = TOKEN_SELECTED;
                         }
+                    }
+                    boxSelectionStarted = false;
+                }
+                else
+                {
+                    if (activeToken != -1)
+                    {
+                        tokens[activeToken].state = TOKEN_PLACED;
+                        activeToken = -1;
+                    }
+                    for (short i = 0; i < maxTokenCount; i++)
+                    {
+                        if (tokens[i].state)
+                        {
+                            if (PointRectCollision(
+                                mousePositionX,
+                                mousePositionY,
+                                tokens[i].x * tileSize,
+                                tokens[i].y * tileSize,
+                                (tokens[i].x + tokens[i].width) * tileSize,
+                                (tokens[i].y + tokens[i].height) * tileSize
+                            ))
+                            {
+                                tokens[i].state = TOKEN_SELECTED;
+                                activeToken = i;
+                            }
+                        }
+                    }
+                }
+            }
+            if (IsKeyPressed(KEY_UP))
+            {
+                for (short i = 0; i < maxTokenCount; i++)
+                {
+                    if (tokens[i].state == TOKEN_SELECTED)
+                    {
+                        tokens[i].y--;
+                    }
+                }
+            }
+            if (IsKeyPressed(KEY_DOWN))
+            {
+                for (short i = 0; i < maxTokenCount; i++)
+                {
+                    if (tokens[i].state == TOKEN_SELECTED)
+                    {
+                        tokens[i].y++;
+                    }
+                }
+            }
+            if (IsKeyPressed(KEY_LEFT))
+            {
+                for (short i = 0; i < maxTokenCount; i++)
+                {
+                    if (tokens[i].state == TOKEN_SELECTED)
+                    {
+                        tokens[i].x--;
+                    }
+                }
+            }
+            if (IsKeyPressed(KEY_RIGHT))
+            {
+                for (short i = 0; i < maxTokenCount; i++)
+                {
+                    if (tokens[i].state == TOKEN_SELECTED)
+                    {
+                        tokens[i].x++;
                     }
                 }
             }
@@ -491,11 +566,27 @@ void UpdateDrawFrame()
                 (tokens[i].width * tileSize)-2, (tokens[i].height * tileSize)-2,
                 tokens[i].color
             );
+            break;
+        }
+        case TOKEN_SELECTED:
+        {
+            DrawRectangle(
+                tokens[i].x * tileSize, tokens[i].y * tileSize,
+                tokens[i].width * tileSize, tokens[i].height * tileSize,
+                WHITE
+            );
+            DrawRectangle(
+                (tokens[i].x * tileSize)+3, (tokens[i].y * tileSize)+3,
+                (tokens[i].width * tileSize)-6, (tokens[i].height * tileSize)-6,
+                RED
+            );
+            break;
         }
         
         default:
             break;
         }
+        // DrawText(TextFormat("%d", tokens[i].state), tokens[i].x * tileSize + 5, tokens[i].y * tileSize + 5, tileSize, BLUE);
     }
     
     if (mapEditorMode == MAP_PLACEWALLS)
@@ -584,7 +675,7 @@ void UpdateDrawFrame()
 
     // Debug text
     // DrawText(TextFormat("(%d %% %d) - %d = %d \n\n\n\n%d", mousePositionX, (int)tileSize, mouseSensitivityDistance, ((mousePositionX + mouseSensitivityDistance)% (int)tileSize), isMouseOverCorner), 10, 10, 50, RED);
-    // DrawText(TextFormat("%d", wallPlacementStarted), 10, 150, 50, RED);
+    // DrawText(TextFormat("%d", activeToken), 10, 150, 50, RED);
 
     EndDrawing();
 }
