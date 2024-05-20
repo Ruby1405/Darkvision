@@ -163,8 +163,8 @@ inline bool PointRectCollision(int x, int y, int rx, int ry, int rx2, int ry2)
 inline Vector2 FoVEndpoint(short x, short y)
 {
     return (Vector2){
-        x + 10 * ((x * tileSize) - (tokens[activeToken].x * tileSize) + (tileSize * 0.5)),
-        y + 10 * ((y * tileSize) - (tokens[activeToken].y * tileSize) + (tileSize * 0.5))};
+        x + 100 * (x - tokens[activeToken].x - 0.5),
+        y + 100 * (y - tokens[activeToken].y - 0.5)};
 }
 
 // Game loop
@@ -541,36 +541,32 @@ void UpdateDrawFrame()
                 continue;
 
             Vector2 a = (Vector2){
-                walls[i].startX * tileSize,
-                walls[i].startY * tileSize};
+                walls[i].startX,
+                walls[i].startY};
             Vector2 b = (Vector2){
-                walls[i].endX * tileSize,
-                walls[i].endY * tileSize};
-            Vector2 c = (Vector2){
-                FoVEndpoint(walls[i].startX, walls[i].startY).x,
-                FoVEndpoint(walls[i].startX, walls[i].startY).y};
-            Vector2 d = (Vector2){
-                FoVEndpoint(walls[i].endX, walls[i].endY).x,
-                FoVEndpoint(walls[i].endX, walls[i].endY).y};
+                walls[i].endX,
+                walls[i].endY};
+            Vector2 c = FoVEndpoint(walls[i].startX, walls[i].startY);
+            Vector2 d = FoVEndpoint(walls[i].endX, walls[i].endY);
 
             if ( (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x) > 0.0f )
             {
                 // clockwise
-                DrawTriangle( a, c, d, BLACK);
-                DrawTriangle( a, d, b, BLACK);
+                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(c, tileSize), Vector2Scale(d, tileSize), BLACK);
+                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(d, tileSize), Vector2Scale(b, tileSize), BLACK);
             }
             else
             {
                 // counter-clockwise.
-                DrawTriangle( a, d, c, BLACK);
-                DrawTriangle( a, b, d, BLACK);
+                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(d, tileSize), Vector2Scale(c, tileSize), BLACK);
+                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(b, tileSize), Vector2Scale(d, tileSize), BLACK);
             }
         }
     }
 
     // Draw Tokens
     for (short i = 0; i < maxTokenCount; i++)
-    {
+    {        
         switch (tokens[i].state)
         {
         case TOKEN_PLACED:
@@ -641,40 +637,43 @@ void UpdateDrawFrame()
     }
 
     // Draw walls that exist
-    for (short i = 0; i < maxWallCount; i++)
+    if (mapEditorMode == MAP_PLACEWALLS)
     {
-        if (walls[i].state)
+        for (short i = 0; i < maxWallCount; i++)
         {
-            DrawLineEx(
-                (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
-                (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
-                5, BLACK);
+            if (walls[i].state)
+            {
+                DrawLineEx(
+                    (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
+                    (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
+                    5, BLACK);
+            }
         }
-    }
-    for (short i = 0; i < maxWallCount; i++)
-    {
-        if (walls[i].state)
+        for (short i = 0; i < maxWallCount; i++)
         {
-            Color wallColor = wallColorToggle ? GREEN : BLUE;
-            DrawLineEx(
-                (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
-                (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
-                3, i == selectedWallIndex || walls[i].state == WALL_MARKED ? RED : wallColor);
+            if (walls[i].state)
+            {
+                Color wallColor = wallColorToggle ? GREEN : BLUE;
+                DrawLineEx(
+                    (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
+                    (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
+                    3, i == selectedWallIndex || walls[i].state == WALL_MARKED ? RED : wallColor);
+            }
         }
-    }
 
-    // Draw the wall being placed
-    if (wallPlacementStarted)
-    {
-        DrawLineEx(
-            (Vector2){walls[placeWallIndex].startX * tileSize, walls[placeWallIndex].startY * tileSize},
-            (Vector2){mousePositionX, mousePositionY},
-            5, BLACK);
-        DrawLineEx(
-            (Vector2){walls[placeWallIndex].startX * tileSize, walls[placeWallIndex].startY * tileSize},
-            (Vector2){mousePositionX, mousePositionY},
-            3,
-            PINK);
+        // Draw the wall being placed
+        if (wallPlacementStarted)
+        {
+            DrawLineEx(
+                (Vector2){walls[placeWallIndex].startX * tileSize, walls[placeWallIndex].startY * tileSize},
+                (Vector2){mousePositionX, mousePositionY},
+                5, BLACK);
+            DrawLineEx(
+                (Vector2){walls[placeWallIndex].startX * tileSize, walls[placeWallIndex].startY * tileSize},
+                (Vector2){mousePositionX, mousePositionY},
+                3,
+                PINK);
+        }
     }
 
     // Draw box selection
