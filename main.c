@@ -532,38 +532,6 @@ void UpdateDrawFrame()
 
     DrawTextureEx(mapTexture, (Vector2){0, 0}, 0, 0.5, WHITE);
 
-    // Draw FoV shadows
-    if (drawFov && activeToken != -1)
-    {
-        for (short i = 0; i < maxWallCount; i++)
-        {
-            if (!walls[i].state)
-                continue;
-
-            Vector2 a = (Vector2){
-                walls[i].startX,
-                walls[i].startY};
-            Vector2 b = (Vector2){
-                walls[i].endX,
-                walls[i].endY};
-            Vector2 c = FoVEndpoint(walls[i].startX, walls[i].startY);
-            Vector2 d = FoVEndpoint(walls[i].endX, walls[i].endY);
-
-            if ( (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x) > 0.0f )
-            {
-                // clockwise
-                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(c, tileSize), Vector2Scale(d, tileSize), BLACK);
-                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(d, tileSize), Vector2Scale(b, tileSize), BLACK);
-            }
-            else
-            {
-                // counter-clockwise.
-                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(d, tileSize), Vector2Scale(c, tileSize), BLACK);
-                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(b, tileSize), Vector2Scale(d, tileSize), BLACK);
-            }
-        }
-    }
-
     // Draw Tokens
     for (short i = 0; i < maxTokenCount; i++)
     {        
@@ -634,11 +602,8 @@ void UpdateDrawFrame()
                 (Vector2){mouseGridPosX * tileSize, mouseGridPosY * tileSize},
                 4, mouseSensitivityDistance - 1, 0, PINK);
         }
-    }
 
-    // Draw walls that exist
-    if (mapEditorMode == MAP_PLACEWALLS)
-    {
+        // Draw walls that exist
         for (short i = 0; i < maxWallCount; i++)
         {
             if (walls[i].state)
@@ -673,6 +638,38 @@ void UpdateDrawFrame()
                 (Vector2){mousePositionX, mousePositionY},
                 3,
                 PINK);
+        }
+    }
+
+    // Draw FoV shadows
+    if (drawFov && activeToken != -1)
+    {
+        for (short i = 0; i < maxWallCount; i++)
+        {
+            if (!walls[i].state)
+                continue;
+
+            Vector2 a = (Vector2){
+                walls[i].startX,
+                walls[i].startY};
+            Vector2 b = (Vector2){
+                walls[i].endX,
+                walls[i].endY};
+            Vector2 c = FoVEndpoint(walls[i].startX, walls[i].startY);
+            Vector2 d = FoVEndpoint(walls[i].endX, walls[i].endY);
+
+            if ( (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x) > 0.0f )
+            {
+                // clockwise
+                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(c, tileSize), Vector2Scale(d, tileSize), BLACK);
+                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(d, tileSize), Vector2Scale(b, tileSize), BLACK);
+            }
+            else
+            {
+                // counter-clockwise.
+                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(d, tileSize), Vector2Scale(c, tileSize), BLACK);
+                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(b, tileSize), Vector2Scale(d, tileSize), BLACK);
+            }
         }
     }
 
