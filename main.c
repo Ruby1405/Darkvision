@@ -23,7 +23,7 @@ short gameBoardGridHeight = 28;
 // Tile size (automatically calculated)
 float tileSize = 20;
 
-// Distance from a point to be considered as the point 
+// Distance from a point to be considered as the point
 int mouseSensitivityDistance = 6;
 // Mouse position
 int mousePositionX = 0;
@@ -78,37 +78,37 @@ short selectedWallIndex = -1;
 typedef enum BITCONDITION
 {
     CON_DEAD = 1,
-    CON_BLIND = 1<<1,
-    CON_CHARMED = 1<<2,
-    CON_DEAFENED = 1<<3,
-    CON_FRIGHTENED = 1<<4,
-    CON_GRAPPLED = 1<<5,
-    CON_INCAPACITATED = 1<<6,
-    CON_INVISIBLE = 1<<7,
-    CON_PARALYZED = 1<<8,
-    CON_PETRIFIED = 1<<9,
-    CON_POISONED = 1<<10,
-    CON_PRONE = 1<<11,
-    CON_RESTRAINED = 1<<12,
-    CON_STUNNED = 1<<13,
-    CON_UNCONSCIOUS = 1<<14,
-    CON_EXTRA_01 = 1<<15,
-    CON_EXTRA_02 = 1<<16,
-    CON_EXTRA_03 = 1<<17,
-    CON_EXTRA_04 = 1<<18,
-    CON_EXTRA_05 = 1<<19,
-    CON_EXTRA_06 = 1<<20,
-    CON_EXTRA_07 = 1<<21,
-    CON_EXTRA_08 = 1<<22,
-    CON_EXTRA_09 = 1<<23,
-    CON_EXTRA_10 = 1<<24,
-    CON_EXTRA_11 = 1<<25,
-    CON_EXTRA_12 = 1<<26,
-    CON_EXTRA_13 = 1<<27,
-    CON_EXTRA_14 = 1<<28,
-    CON_EXTRA_15 = 1<<29,
-    CON_EXTRA_16 = 1<<30,
-    CON_EXTRA_17 = 1<<31
+    CON_BLIND = 1 << 1,
+    CON_CHARMED = 1 << 2,
+    CON_DEAFENED = 1 << 3,
+    CON_FRIGHTENED = 1 << 4,
+    CON_GRAPPLED = 1 << 5,
+    CON_INCAPACITATED = 1 << 6,
+    CON_INVISIBLE = 1 << 7,
+    CON_PARALYZED = 1 << 8,
+    CON_PETRIFIED = 1 << 9,
+    CON_POISONED = 1 << 10,
+    CON_PRONE = 1 << 11,
+    CON_RESTRAINED = 1 << 12,
+    CON_STUNNED = 1 << 13,
+    CON_UNCONSCIOUS = 1 << 14,
+    CON_EXTRA_01 = 1 << 15,
+    CON_EXTRA_02 = 1 << 16,
+    CON_EXTRA_03 = 1 << 17,
+    CON_EXTRA_04 = 1 << 18,
+    CON_EXTRA_05 = 1 << 19,
+    CON_EXTRA_06 = 1 << 20,
+    CON_EXTRA_07 = 1 << 21,
+    CON_EXTRA_08 = 1 << 22,
+    CON_EXTRA_09 = 1 << 23,
+    CON_EXTRA_10 = 1 << 24,
+    CON_EXTRA_11 = 1 << 25,
+    CON_EXTRA_12 = 1 << 26,
+    CON_EXTRA_13 = 1 << 27,
+    CON_EXTRA_14 = 1 << 28,
+    CON_EXTRA_15 = 1 << 29,
+    CON_EXTRA_16 = 1 << 30,
+    CON_EXTRA_17 = 1 << 31
 } BITCONDITION;
 
 typedef enum TOKENSTATE
@@ -136,7 +136,7 @@ const short maxTokenCount = 512;
 TOKEN tokens[512];
 short activeToken = -1;
 
-bool drawFov = false;
+bool drawFov = true;
 
 // Map texture
 Texture2D mapTexture;
@@ -154,11 +154,17 @@ inline int min(int a, int b)
 // Point rectangle collision
 inline bool PointRectCollision(int x, int y, int rx, int ry, int rx2, int ry2)
 {
-    return
-        x >= min(rx, rx2) &&
-        x <= max(rx, rx2) &&
-        y >= min(ry, ry2) &&
-        y <= max(ry, ry2);
+    return x >= min(rx, rx2) &&
+           x <= max(rx, rx2) &&
+           y >= min(ry, ry2) &&
+           y <= max(ry, ry2);
+}
+
+inline Vector2 FoVEndpoint(short x, short y)
+{
+    return (Vector2){
+        x + 100 * (x - tokens[activeToken].x - 0.5),
+        y + 100 * (y - tokens[activeToken].y - 0.5)};
 }
 
 // Game loop
@@ -177,357 +183,348 @@ void UpdateDrawFrame()
 
     switch (mapEditorMode)
     {
-        case MAP_NONE:
-            break;
-        case MAP_PLACEWALLS:
+    case MAP_NONE:
+        break;
+    case MAP_PLACEWALLS:
+    {
+        if (!wallPlacementStarted)
         {
-            if (!wallPlacementStarted)
-            {
-                if (boxSelectionStarted)
-                {
-                    // Select walls in the box
-                    for (short i = 0; i < maxWallCount; i++)
-                    {
-                        if (walls[i].state)
-                        {
-                            walls[i].state = WALL_PLACED;
-
-                            // First pass: Rectangle - point collision wall start
-                            if (PointRectCollision(
-                                walls[i].startX * tileSize, walls[i].startY * tileSize,
-                                mousePositionXOld, mousePositionYOld,
-                                mousePositionX, mousePositionY
-                            ))
-                            {
-                                walls[i].state = WALL_MARKED;
-                                continue;
-                            }
-
-                            // Second pass: Rectangle - point collision wall end
-                            if (PointRectCollision(
-                                walls[i].endX * tileSize, walls[i].endY * tileSize,
-                                mousePositionXOld, mousePositionYOld,
-                                mousePositionX, mousePositionY
-                            ))
-                            {
-                                walls[i].state = WALL_MARKED;
-                                continue;
-                            }
-
-                            // Third pass: Line - Line collision for three box edges
-                            Vector2 boxEdges[4] = {
-                                (Vector2){mousePositionXOld, mousePositionYOld},
-                                (Vector2){mousePositionX, mousePositionYOld},
-                                (Vector2){mousePositionX, mousePositionY},
-                                (Vector2){mousePositionXOld, mousePositionY}
-                            };
-
-                            Vector2 wallStartVector = (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize};
-                            Vector2 wallEndVector = (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize};
-
-                            for (short ii = 0; ii < 3; ii++)
-                            {
-                                if (CheckCollisionLines(
-                                    boxEdges[ii], boxEdges[ii + 1],
-                                    wallStartVector, wallEndVector,
-                                    NULL
-                                ))
-                                {
-                                    walls[i].state = WALL_MARKED;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    selectedWallIndex = -1;
-                    for (short i = 0; i < maxWallCount; i++)
-                    {
-                        if (walls[i].state)
-                        {
-                            if (CheckCollisionPointLine(
-                                    (Vector2){mousePositionX, mousePositionY},
-                                    (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
-                                    (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
-                                    mouseSensitivityDistance))
-                            {
-                                selectedWallIndex = i;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            {
-                if (isMouseOverCorner)
-                {
-                    if (wallPlacementStarted)
-                    {
-                        // Place the end of the wall
-                        walls[placeWallIndex].endX = mouseGridPosX;
-                        walls[placeWallIndex].endY = mouseGridPosY;
-                        
-                        // Check if a new wall can be made
-                        bool wallFound = false;
-                        for (short i = 0; i < maxWallCount; i++)
-                        {
-                            if (!walls[i].state)
-                            {
-                                placeWallIndex = i;
-                                wallFound = true;
-                                break;
-                            }
-                        }
-                        if (!wallFound)
-                        {
-                            wallPlacementStarted = false;
-                            // cry about it (TODO: Make an error message)
-                        }
-                        else
-                        {
-                            // Make a new wall
-                            walls[placeWallIndex].startX = mouseGridPosX;
-                            walls[placeWallIndex].startY = mouseGridPosY;
-                            walls[placeWallIndex].endX = mouseGridPosX;
-                            walls[placeWallIndex].endY = mouseGridPosY;
-                            walls[placeWallIndex].state = WALL_PLACED;
-                        }
-                    }
-                    else
-                    {
-                        // Check if a new wall can be made
-                        bool wallFound = false;
-                        for (short i = 0; i < maxWallCount; i++)
-                        {
-                            if (!walls[i].state)
-                            {
-                                placeWallIndex = i;
-                                wallFound = true;
-                                break;
-                            }
-                        }
-                        if (!wallFound)
-                        {
-                            // cry about it
-                        }
-                        else
-                        {
-                            selectedWallIndex = -1;
-                            // Make a new wall
-                            walls[placeWallIndex].startX = mouseGridPosX;
-                            walls[placeWallIndex].startY = mouseGridPosY;
-                            walls[placeWallIndex].endX = mouseGridPosX;
-                            walls[placeWallIndex].endY = mouseGridPosY;
-                            walls[placeWallIndex].state = WALL_PLACED;
-                            wallPlacementStarted = true;
-                        }
-                    }
-                }
-            }
-            if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
-            {
-                if (wallPlacementStarted)
-                {
-                    // Stop placing the wall
-                    walls[placeWallIndex].state = WALL_NONE;
-                    wallPlacementStarted = false;
-                }
-                mousePositionXOld = mousePositionX;
-                mousePositionYOld = mousePositionY;
-            }
-            if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && !boxSelectionStarted)
-            {
-                if (abs(mousePositionX - mousePositionXOld) > mouseSensitivityDistance ||
-                    abs(mousePositionY - mousePositionYOld) > mouseSensitivityDistance)
-                {
-                    boxSelectionStarted = true;
-                }
-            }
-            if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
-            {
-                if (boxSelectionStarted)
-                {
-                    // delete selected walls 
-                    for (short i = 0; i < maxWallCount; i++)
-                    {
-                        if (walls[i].state == WALL_MARKED)
-                        {
-                            walls[i].state = WALL_NONE;
-                        }
-                    }
-                    boxSelectionStarted = false;
-                }
-                else if (selectedWallIndex != -1)
-                {
-                    // Remove the wall
-                    walls[selectedWallIndex].state = WALL_NONE;
-                }
-            }
-            break;
-        }
-        case MAP_PLAY:
-        {
-            // Select tokens
             if (boxSelectionStarted)
             {
-                // Select tokens in the box
-                for (short i = 0; i < maxTokenCount; i++)
+                // Select walls in the box
+                for (short i = 0; i < maxWallCount; i++)
                 {
-                    if (tokens[i].state)
+                    if (walls[i].state)
                     {
-                        if (tokens[i].state == TOKEN_SELECTED )
+                        walls[i].state = WALL_PLACED;
+
+                        // First pass: Rectangle - point collision wall start
+                        if (PointRectCollision(
+                                walls[i].startX * tileSize, walls[i].startY * tileSize,
+                                mousePositionXOld, mousePositionYOld,
+                                mousePositionX, mousePositionY))
                         {
+                            walls[i].state = WALL_MARKED;
                             continue;
                         }
 
-                        tokens[i].state = TOKEN_PLACED;
-
-                        if (CheckCollisionRecs(
-                            (Rectangle){
-                                min(mousePositionXOld, mousePositionX) * tileSize,
-                                min(mousePositionYOld, mousePositionY) * tileSize,
-                                abs(mousePositionX - mousePositionXOld) * tileSize,
-                                abs(mousePositionY - mousePositionYOld) * tileSize
-                            },
-                            (Rectangle){
-                                tokens[i].x * tileSize,
-                                tokens[i].y * tileSize,
-                                tokens[i].width * tileSize,
-                                tokens[i].height * tileSize
-                            }
-                        ))
+                        // Second pass: Rectangle - point collision wall end
+                        if (PointRectCollision(
+                                walls[i].endX * tileSize, walls[i].endY * tileSize,
+                                mousePositionXOld, mousePositionYOld,
+                                mousePositionX, mousePositionY))
                         {
-                            tokens[i].state = TOKEN_HOVER;
+                            walls[i].state = WALL_MARKED;
+                            continue;
+                        }
+
+                        // Third pass: Line - Line collision for three box edges
+                        Vector2 boxEdges[4] = {
+                            (Vector2){mousePositionXOld, mousePositionYOld},
+                            (Vector2){mousePositionX, mousePositionYOld},
+                            (Vector2){mousePositionX, mousePositionY},
+                            (Vector2){mousePositionXOld, mousePositionY}};
+
+                        Vector2 wallStartVector = (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize};
+                        Vector2 wallEndVector = (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize};
+
+                        for (short ii = 0; ii < 3; ii++)
+                        {
+                            if (CheckCollisionLines(
+                                    boxEdges[ii], boxEdges[ii + 1],
+                                    wallStartVector, wallEndVector,
+                                    NULL))
+                            {
+                                walls[i].state = WALL_MARKED;
+                                break;
+                            }
                         }
                     }
                 }
             }
             else
             {
-                for (short i = 0; i < maxTokenCount; i++)
+                selectedWallIndex = -1;
+                for (short i = 0; i < maxWallCount; i++)
                 {
-                    if (tokens[i].state == TOKEN_HOVER)
+                    if (walls[i].state)
                     {
-                        tokens[i].state = TOKEN_PLACED;
+                        if (CheckCollisionPointLine(
+                                (Vector2){mousePositionX, mousePositionY},
+                                (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
+                                (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
+                                mouseSensitivityDistance))
+                        {
+                            selectedWallIndex = i;
+                            break;
+                        }
                     }
-                    if (tokens[i].state == TOKEN_PLACED)
+                }
+            }
+        }
+
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            if (isMouseOverCorner)
+            {
+                if (wallPlacementStarted)
+                {
+                    // Place the end of the wall
+                    walls[placeWallIndex].endX = mouseGridPosX;
+                    walls[placeWallIndex].endY = mouseGridPosY;
+
+                    // Check if a new wall can be made
+                    bool wallFound = false;
+                    for (short i = 0; i < maxWallCount; i++)
                     {
-                        if (PointRectCollision(
+                        if (!walls[i].state)
+                        {
+                            placeWallIndex = i;
+                            wallFound = true;
+                            break;
+                        }
+                    }
+                    if (!wallFound)
+                    {
+                        wallPlacementStarted = false;
+                        // cry about it (TODO: Make an error message)
+                    }
+                    else
+                    {
+                        // Make a new wall
+                        walls[placeWallIndex].startX = mouseGridPosX;
+                        walls[placeWallIndex].startY = mouseGridPosY;
+                        walls[placeWallIndex].endX = mouseGridPosX;
+                        walls[placeWallIndex].endY = mouseGridPosY;
+                        walls[placeWallIndex].state = WALL_PLACED;
+                    }
+                }
+                else
+                {
+                    // Check if a new wall can be made
+                    bool wallFound = false;
+                    for (short i = 0; i < maxWallCount; i++)
+                    {
+                        if (!walls[i].state)
+                        {
+                            placeWallIndex = i;
+                            wallFound = true;
+                            break;
+                        }
+                    }
+                    if (!wallFound)
+                    {
+                        // cry about it
+                    }
+                    else
+                    {
+                        selectedWallIndex = -1;
+                        // Make a new wall
+                        walls[placeWallIndex].startX = mouseGridPosX;
+                        walls[placeWallIndex].startY = mouseGridPosY;
+                        walls[placeWallIndex].endX = mouseGridPosX;
+                        walls[placeWallIndex].endY = mouseGridPosY;
+                        walls[placeWallIndex].state = WALL_PLACED;
+                        wallPlacementStarted = true;
+                    }
+                }
+            }
+        }
+        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+        {
+            if (wallPlacementStarted)
+            {
+                // Stop placing the wall
+                walls[placeWallIndex].state = WALL_NONE;
+                wallPlacementStarted = false;
+            }
+            mousePositionXOld = mousePositionX;
+            mousePositionYOld = mousePositionY;
+        }
+        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && !boxSelectionStarted)
+        {
+            if (abs(mousePositionX - mousePositionXOld) > mouseSensitivityDistance ||
+                abs(mousePositionY - mousePositionYOld) > mouseSensitivityDistance)
+            {
+                boxSelectionStarted = true;
+            }
+        }
+        if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
+        {
+            if (boxSelectionStarted)
+            {
+                // delete selected walls
+                for (short i = 0; i < maxWallCount; i++)
+                {
+                    if (walls[i].state == WALL_MARKED)
+                    {
+                        walls[i].state = WALL_NONE;
+                    }
+                }
+                boxSelectionStarted = false;
+            }
+            else if (selectedWallIndex != -1)
+            {
+                // Remove the wall
+                walls[selectedWallIndex].state = WALL_NONE;
+            }
+        }
+        break;
+    }
+    case MAP_PLAY:
+    {
+        // Select tokens
+        if (boxSelectionStarted)
+        {
+            // Select tokens in the box
+            for (short i = 0; i < maxTokenCount; i++)
+            {
+                if (tokens[i].state)
+                {
+                    if (tokens[i].state == TOKEN_SELECTED)
+                    {
+                        continue;
+                    }
+
+                    tokens[i].state = TOKEN_PLACED;
+
+                    if (CheckCollisionRecs(
+                            (Rectangle){
+                                min(mousePositionXOld, mousePositionX) * tileSize,
+                                min(mousePositionYOld, mousePositionY) * tileSize,
+                                abs(mousePositionX - mousePositionXOld) * tileSize,
+                                abs(mousePositionY - mousePositionYOld) * tileSize},
+                            (Rectangle){
+                                tokens[i].x * tileSize,
+                                tokens[i].y * tileSize,
+                                tokens[i].width * tileSize,
+                                tokens[i].height * tileSize}))
+                    {
+                        tokens[i].state = TOKEN_HOVER;
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (short i = 0; i < maxTokenCount; i++)
+            {
+                if (tokens[i].state == TOKEN_HOVER)
+                {
+                    tokens[i].state = TOKEN_PLACED;
+                }
+                if (tokens[i].state == TOKEN_PLACED)
+                {
+                    if (PointRectCollision(
                             mousePositionX,
                             mousePositionY,
                             tokens[i].x * tileSize,
                             tokens[i].y * tileSize,
                             (tokens[i].x + tokens[i].width) * tileSize,
-                            (tokens[i].y + tokens[i].height) * tileSize
-                        ))
-                        {
-                            tokens[i].state = TOKEN_HOVER;
-                        }
+                            (tokens[i].y + tokens[i].height) * tileSize))
+                    {
+                        tokens[i].state = TOKEN_HOVER;
                     }
                 }
             }
-            if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+        }
+        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+        {
+            mousePositionXOld = mousePositionX;
+            mousePositionYOld = mousePositionY;
+        }
+        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && !boxSelectionStarted)
+        {
+            if (abs(mousePositionX - mousePositionXOld) > mouseSensitivityDistance ||
+                abs(mousePositionY - mousePositionYOld) > mouseSensitivityDistance)
             {
-                mousePositionXOld = mousePositionX;
-                mousePositionYOld = mousePositionY;
+                boxSelectionStarted = true;
             }
-            if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && !boxSelectionStarted)
+        }
+        if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
+        {
+            if (boxSelectionStarted)
             {
-                if (abs(mousePositionX - mousePositionXOld) > mouseSensitivityDistance ||
-                    abs(mousePositionY - mousePositionYOld) > mouseSensitivityDistance)
+                // select tokens in the box
+                for (short i = 0; i < maxTokenCount; i++)
                 {
-                    boxSelectionStarted = true;
+                    if (tokens[i].state == TOKEN_HOVER)
+                    {
+                        tokens[i].state = TOKEN_SELECTED;
+                    }
                 }
+                boxSelectionStarted = false;
             }
-            if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
+            else
             {
-                if (boxSelectionStarted)
+                if (activeToken != -1)
                 {
-                    // select tokens in the box
-                    for (short i = 0; i < maxTokenCount; i++)
-                    {
-                        if (tokens[i].state == TOKEN_HOVER)
-                        {
-                            tokens[i].state = TOKEN_SELECTED;
-                        }
-                    }
-                    boxSelectionStarted = false;
+                    tokens[activeToken].state = TOKEN_PLACED;
+                    activeToken = -1;
                 }
-                else
+                for (short i = 0; i < maxTokenCount; i++)
                 {
-                    if (activeToken != -1)
+                    if (tokens[i].state)
                     {
-                        tokens[activeToken].state = TOKEN_PLACED;
-                        activeToken = -1;
-                    }
-                    for (short i = 0; i < maxTokenCount; i++)
-                    {
-                        if (tokens[i].state)
-                        {
-                            if (PointRectCollision(
+                        if (PointRectCollision(
                                 mousePositionX,
                                 mousePositionY,
                                 tokens[i].x * tileSize,
                                 tokens[i].y * tileSize,
                                 (tokens[i].x + tokens[i].width) * tileSize,
-                                (tokens[i].y + tokens[i].height) * tileSize
-                            ))
-                            {
-                                tokens[i].state = TOKEN_SELECTED;
-                                activeToken = i;
-                            }
+                                (tokens[i].y + tokens[i].height) * tileSize))
+                        {
+                            tokens[i].state = TOKEN_SELECTED;
+                            activeToken = i;
                         }
                     }
                 }
             }
-            if (IsKeyPressed(KEY_UP))
-            {
-                for (short i = 0; i < maxTokenCount; i++)
-                {
-                    if (tokens[i].state == TOKEN_SELECTED)
-                    {
-                        tokens[i].y--;
-                    }
-                }
-            }
-            if (IsKeyPressed(KEY_DOWN))
-            {
-                for (short i = 0; i < maxTokenCount; i++)
-                {
-                    if (tokens[i].state == TOKEN_SELECTED)
-                    {
-                        tokens[i].y++;
-                    }
-                }
-            }
-            if (IsKeyPressed(KEY_LEFT))
-            {
-                for (short i = 0; i < maxTokenCount; i++)
-                {
-                    if (tokens[i].state == TOKEN_SELECTED)
-                    {
-                        tokens[i].x--;
-                    }
-                }
-            }
-            if (IsKeyPressed(KEY_RIGHT))
-            {
-                for (short i = 0; i < maxTokenCount; i++)
-                {
-                    if (tokens[i].state == TOKEN_SELECTED)
-                    {
-                        tokens[i].x++;
-                    }
-                }
-            }
-            break;
         }
-        default:
-            break;
+        if (IsKeyPressed(KEY_UP))
+        {
+            for (short i = 0; i < maxTokenCount; i++)
+            {
+                if (tokens[i].state == TOKEN_SELECTED)
+                {
+                    tokens[i].y--;
+                }
+            }
+        }
+        if (IsKeyPressed(KEY_DOWN))
+        {
+            for (short i = 0; i < maxTokenCount; i++)
+            {
+                if (tokens[i].state == TOKEN_SELECTED)
+                {
+                    tokens[i].y++;
+                }
+            }
+        }
+        if (IsKeyPressed(KEY_LEFT))
+        {
+            for (short i = 0; i < maxTokenCount; i++)
+            {
+                if (tokens[i].state == TOKEN_SELECTED)
+                {
+                    tokens[i].x--;
+                }
+            }
+        }
+        if (IsKeyPressed(KEY_RIGHT))
+        {
+            for (short i = 0; i < maxTokenCount; i++)
+            {
+                if (tokens[i].state == TOKEN_SELECTED)
+                {
+                    tokens[i].x++;
+                }
+            }
+        }
+        break;
+    }
+    default:
+        break;
     }
 
     BeginDrawing();
@@ -537,7 +534,7 @@ void UpdateDrawFrame()
 
     // Draw Tokens
     for (short i = 0; i < maxTokenCount; i++)
-    {
+    {        
         switch (tokens[i].state)
         {
         case TOKEN_PLACED:
@@ -545,13 +542,11 @@ void UpdateDrawFrame()
             DrawRectangle(
                 tokens[i].x * tileSize, tokens[i].y * tileSize,
                 tokens[i].width * tileSize, tokens[i].height * tileSize,
-                BLACK
-            );
+                BLACK);
             DrawRectangle(
-                (tokens[i].x * tileSize)+1, (tokens[i].y * tileSize)+1,
-                (tokens[i].width * tileSize)-2, (tokens[i].height * tileSize)-2,
-                tokens[i].color
-            );
+                (tokens[i].x * tileSize) + 1, (tokens[i].y * tileSize) + 1,
+                (tokens[i].width * tileSize) - 2, (tokens[i].height * tileSize) - 2,
+                tokens[i].color);
             break;
         }
         case TOKEN_HOVER:
@@ -559,13 +554,11 @@ void UpdateDrawFrame()
             DrawRectangle(
                 tokens[i].x * tileSize, tokens[i].y * tileSize,
                 tokens[i].width * tileSize, tokens[i].height * tileSize,
-                WHITE
-            );
+                WHITE);
             DrawRectangle(
-                (tokens[i].x * tileSize)+1, (tokens[i].y * tileSize)+1,
-                (tokens[i].width * tileSize)-2, (tokens[i].height * tileSize)-2,
-                tokens[i].color
-            );
+                (tokens[i].x * tileSize) + 1, (tokens[i].y * tileSize) + 1,
+                (tokens[i].width * tileSize) - 2, (tokens[i].height * tileSize) - 2,
+                tokens[i].color);
             break;
         }
         case TOKEN_SELECTED:
@@ -573,22 +566,20 @@ void UpdateDrawFrame()
             DrawRectangle(
                 tokens[i].x * tileSize, tokens[i].y * tileSize,
                 tokens[i].width * tileSize, tokens[i].height * tileSize,
-                WHITE
-            );
+                WHITE);
             DrawRectangle(
-                (tokens[i].x * tileSize)+3, (tokens[i].y * tileSize)+3,
-                (tokens[i].width * tileSize)-6, (tokens[i].height * tileSize)-6,
-                RED
-            );
+                (tokens[i].x * tileSize) + 3, (tokens[i].y * tileSize) + 3,
+                (tokens[i].width * tileSize) - 6, (tokens[i].height * tileSize) - 6,
+                RED);
             break;
         }
-        
+
         default:
             break;
         }
         // DrawText(TextFormat("%d", tokens[i].state), tokens[i].x * tileSize + 5, tokens[i].y * tileSize + 5, tileSize, BLUE);
     }
-    
+
     if (mapEditorMode == MAP_PLACEWALLS)
     {
         // Draw wall nodes (tile corners)
@@ -596,62 +587,90 @@ void UpdateDrawFrame()
         {
             for (short y = 0; y < gameBoardGridHeight; y++)
             {
-                DrawPoly((Vector2){x * tileSize, y * tileSize}, 4, 3, 0, BLACK);   
-                DrawPoly((Vector2){x * tileSize, y * tileSize}, 4, 2, 0, WHITE);   
+                DrawPoly((Vector2){x * tileSize, y * tileSize}, 4, 3, 0, BLACK);
+                DrawPoly((Vector2){x * tileSize, y * tileSize}, 4, 2, 0, WHITE);
             }
         }
-        
+
         // Draw highlighted wall node
         if (isMouseOverCorner)
         {
             DrawPoly(
-                (Vector2){mouseGridPosX * tileSize, mouseGridPosY * tileSize}, 
-                4, mouseSensitivityDistance, 0, BLACK );
+                (Vector2){mouseGridPosX * tileSize, mouseGridPosY * tileSize},
+                4, mouseSensitivityDistance, 0, BLACK);
             DrawPoly(
-                (Vector2){mouseGridPosX * tileSize, mouseGridPosY * tileSize}, 
-                4, mouseSensitivityDistance - 1, 0, PINK );
+                (Vector2){mouseGridPosX * tileSize, mouseGridPosY * tileSize},
+                4, mouseSensitivityDistance - 1, 0, PINK);
+        }
+
+        // Draw walls that exist
+        for (short i = 0; i < maxWallCount; i++)
+        {
+            if (walls[i].state)
+            {
+                DrawLineEx(
+                    (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
+                    (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
+                    5, BLACK);
+            }
+        }
+        for (short i = 0; i < maxWallCount; i++)
+        {
+            if (walls[i].state)
+            {
+                Color wallColor = wallColorToggle ? GREEN : BLUE;
+                DrawLineEx(
+                    (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
+                    (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
+                    3, i == selectedWallIndex || walls[i].state == WALL_MARKED ? RED : wallColor);
+            }
+        }
+
+        // Draw the wall being placed
+        if (wallPlacementStarted)
+        {
+            DrawLineEx(
+                (Vector2){walls[placeWallIndex].startX * tileSize, walls[placeWallIndex].startY * tileSize},
+                (Vector2){mousePositionX, mousePositionY},
+                5, BLACK);
+            DrawLineEx(
+                (Vector2){walls[placeWallIndex].startX * tileSize, walls[placeWallIndex].startY * tileSize},
+                (Vector2){mousePositionX, mousePositionY},
+                3,
+                PINK);
         }
     }
 
-    // Draw walls that exist
-    for (short i = 0; i < maxWallCount; i++)
+    // Draw FoV shadows
+    if (drawFov && activeToken != -1)
     {
-        if(walls[i].state)
+        for (short i = 0; i < maxWallCount; i++)
         {
-            DrawLineEx(
-                (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
-                (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
-                5, BLACK
-            );
-        }
-    }
-    for (short i = 0; i < maxWallCount; i++)
-    {
-        if(walls[i].state)
-        {
-            Color wallColor = wallColorToggle ? GREEN : BLUE;
-            DrawLineEx(
-                (Vector2){walls[i].startX * tileSize, walls[i].startY * tileSize},
-                (Vector2){walls[i].endX * tileSize, walls[i].endY * tileSize},
-                3, i == selectedWallIndex || walls[i].state == WALL_MARKED ? RED : wallColor
-            );
-        }
-    }
+            if (!walls[i].state)
+                continue;
 
-    // Draw the wall being placed
-    if (wallPlacementStarted)
-    {
-        DrawLineEx(
-            (Vector2){walls[placeWallIndex].startX * tileSize, walls[placeWallIndex].startY * tileSize},
-            (Vector2){mousePositionX, mousePositionY},
-            5, BLACK
-        );
-        DrawLineEx(
-            (Vector2){walls[placeWallIndex].startX * tileSize, walls[placeWallIndex].startY * tileSize},
-            (Vector2){mousePositionX, mousePositionY},
-            3,
-            PINK
-        );
+            Vector2 a = (Vector2){
+                walls[i].startX,
+                walls[i].startY};
+            Vector2 b = (Vector2){
+                walls[i].endX,
+                walls[i].endY};
+            Vector2 c = FoVEndpoint(walls[i].startX, walls[i].startY);
+            Vector2 d = FoVEndpoint(walls[i].endX, walls[i].endY);
+
+            if ( (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x) > 0.0f )
+            {
+                // clockwise
+                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(c, tileSize), Vector2Scale(d, tileSize), BLACK);
+                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(d, tileSize), Vector2Scale(b, tileSize), BLACK);
+            }
+            else
+            {
+                // counter-clockwise.
+                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(d, tileSize), Vector2Scale(c, tileSize), BLACK);
+                DrawTriangle( Vector2Scale(a, tileSize), Vector2Scale(b, tileSize), Vector2Scale(d, tileSize), BLACK);
+            }
+        }
     }
 
     // Draw box selection
@@ -662,15 +681,13 @@ void UpdateDrawFrame()
             mousePositionYOld * (mousePositionYOld <= mousePositionY) + mousePositionY * (mousePositionYOld > mousePositionY),
             (mousePositionX - mousePositionXOld) * (mousePositionXOld <= mousePositionX) + (mousePositionXOld - mousePositionX) * (mousePositionXOld > mousePositionX),
             (mousePositionY - mousePositionYOld) * (mousePositionYOld <= mousePositionY) + (mousePositionYOld - mousePositionY) * (mousePositionYOld > mousePositionY),
-            Fade(PURPLE, 0.4)
-        );
+            Fade(PURPLE, 0.4));
         DrawRectangleLines(
             mousePositionXOld * (mousePositionXOld <= mousePositionX) + mousePositionX * (mousePositionXOld > mousePositionX),
             mousePositionYOld * (mousePositionYOld <= mousePositionY) + mousePositionY * (mousePositionYOld > mousePositionY),
             (mousePositionX - mousePositionXOld) * (mousePositionXOld <= mousePositionX) + (mousePositionXOld - mousePositionX) * (mousePositionXOld > mousePositionX),
             (mousePositionY - mousePositionYOld) * (mousePositionYOld <= mousePositionY) + (mousePositionYOld - mousePositionY) * (mousePositionYOld > mousePositionY),
-            PURPLE
-        );
+            PURPLE);
     }
 
     // Debug text
@@ -704,7 +721,7 @@ bool ChangeMapMode()
     }
 }
 
-int main ()
+int main()
 {
     for (short i = 0; i < maxWallCount; i++)
     {
@@ -726,12 +743,12 @@ int main ()
 
     mapTexture = LoadTexture("mapImages/The_handy_hag_upstairs.png");
 
-    screenWidth = mapTexture.width/2;
-    screenHeight = mapTexture.height/2;
+    screenWidth = mapTexture.width / 2;
+    screenHeight = mapTexture.height / 2;
 
     SetWindowSize(screenWidth, screenHeight);
-    
-    tileSize = 
+
+    tileSize =
         (screenWidth / gameBoardGridWidth) * (screenWidth <= screenHeight) +
         (screenHeight / gameBoardGridHeight) * (screenWidth > screenHeight);
 
