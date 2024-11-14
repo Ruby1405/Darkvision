@@ -1,1 +1,39 @@
-<!doctypehtml><html lang=EN-us><head><meta charset=utf-8><meta content="text/html; charset=utf-8"http-equiv=Content-Type><title>Darkvision</title><meta content="raylib web game"name=title><meta content="New raylib web videogame, developed using raylib videogames library"name=description><meta content="raylib, programming, examples, html5, C, C++, library, learn, games, videogames"name=keywords><meta content="width=device-width"name=viewport><link href=https://www.raylib.com/favicon.ico rel="shortcut icon"><link href=style.css rel=stylesheet><script src=https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js/dist/FileSaver.min.js></script><script>function saveFileFromMEMFSToDisk(e,a){var i,o=FS.readFile(e);i=new Blob([o.buffer],{type:"application/octet-binary"}),saveAs(i,a)}</script></head><body><header><h1>DARKVISION</h1></header><div class=mainGrid><canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas><div class=sideGrid><button onclick=wallChange()>Toggle Wall Colour</button><button onclick=toggleMapMode()>Toggle Map Mode</button><button onclick=printWalls()>Print Walls</button></div></div><p id=output></p><script>var Module={print:function(){var e=document.getElementById("output");return e&&(e.value=""),function(n){arguments.length>1&&(n=Array.prototype.slice.call(arguments).join(" ")),console.log(n),e&&(e.value+=n+"\n",e.scrollTop=e.scrollHeight)}}(),canvas:document.getElementById("canvas")}</script><script src=game.js async></script><script>function wallChange(){var l=Module.ccall("ChangeWallColor","boolean",null,null);console.log("Wall color changed: "+l)}function toggleMapMode(){var l=Module.ccall("ChangeMapMode","boolean",null,null);console.log("Map mode toggled: "+l)}function printWalls(){Module.ccall("PrintWalls","boolean",null,null)}</script></body></html>
+<!doctypehtml>
+    <html lang=EN-us>
+
+    <head>
+        <meta charset=utf-8>
+        <meta content="text/html; charset=utf-8" http-equiv=Content-Type>
+        <title>Darkvision</title>
+        <meta content="raylib web game" name=title>
+        <meta content="New raylib web videogame, developed using raylib videogames library" name=description>
+        <meta content="raylib, programming, examples, html5, C, C++, library, learn, games, videogames" name=keywords>
+        <meta content="width=device-width" name=viewport>
+        <link href=https://www.raylib.com/favicon.ico rel="shortcut icon">
+        <link href=style.css rel=stylesheet>
+        <script src=https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js/dist/FileSaver.min.js></script>
+        <script>function saveFileFromMEMFSToDisk(e, a) { var i, o = FS.readFile(e); i = new Blob([o.buffer], { type: "application/octet-binary" }), saveAs(i, a) }</script>
+    </head>
+
+    <body>
+        <header>
+            <h1>DARKVISION</h1>
+        </header>
+        <div class=mainGrid><canvas class=emscripten id=canvas oncontextmenu=event.preventDefault()
+                tabindex=-1></canvas>
+            <div class=sideGrid>
+                <button onclick=wallChange()>Toggle Wall Colour</button>
+                <button onclick=toggleMapMode()>Toggle Map Mode</button>
+                <button onclick=printWalls()>Print Walls</button>
+                <p>Draw walls between the dots using left mouse button</p>
+                <p>Delete using right mouse button</p>
+                <p>After switching map mode characters (squares) can be selected with right click and moved with arrow keys</p>
+            </div>
+        </div>
+        <p id=output></p>
+        <script>var Module = { print: function () { var e = document.getElementById("output"); return e && (e.value = ""), function (n) { arguments.length > 1 && (n = Array.prototype.slice.call(arguments).join(" ")), console.log(n), e && (e.value += n + "\n", e.scrollTop = e.scrollHeight) } }(), canvas: document.getElementById("canvas") }</script>
+        <script src=game.js async></script>
+        <script>function wallChange() { var l = Module.ccall("ChangeWallColor", "boolean", null, null); console.log("Wall color changed: " + l) } function toggleMapMode() { var l = Module.ccall("ChangeMapMode", "boolean", null, null); console.log("Map mode toggled: " + l) } function printWalls() { Module.ccall("PrintWalls", "boolean", null, null) }</script>
+    </body>
+
+    </html>
