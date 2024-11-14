@@ -163,8 +163,8 @@ inline bool PointRectCollision(int x, int y, int rx, int ry, int rx2, int ry2)
 inline Vector2 FoVEndpoint(short x, short y)
 {
     return (Vector2){
-        x + 100 * (x - tokens[activeToken].x - 0.5),
-        y + 100 * (y - tokens[activeToken].y - 0.5)};
+        x + (gameBoardGridWidth + gameBoardGridHeight) * (x - tokens[activeToken].x - 0.5 * tokens[activeToken].width),
+        y + (gameBoardGridWidth + gameBoardGridHeight) * (y - tokens[activeToken].y - 0.5 * tokens[activeToken].height)};
 }
 
 // Game loop
@@ -721,20 +721,70 @@ bool ChangeMapMode()
     }
 }
 
+EMSCRIPTEN_KEEPALIVE
+bool PrintWalls()
+{
+    for (short i = 0; i < maxWallCount; i++)
+    {
+        if (walls[i].state)
+        {
+            printf("%d,%d,%d,%d\n", walls[i].startX, walls[i].startY, walls[i].endX, walls[i].endY);
+        }
+    }
+    return true;
+}
+
 int main()
 {
     for (short i = 0; i < maxWallCount; i++)
     {
         walls[i].state = WALL_NONE;
     }
+    WALL templateWalls[] = {
+        (WALL){WALL_PLACED,4,0,4,2},
+        (WALL){WALL_PLACED,4,2,10,2},
+        (WALL){WALL_PLACED,10,2,10,6},
+        (WALL){WALL_PLACED,13,2,12,2},
+        (WALL){WALL_PLACED,12,2,12,13},
+        (WALL){WALL_PLACED,12,8,16,8},
+        (WALL){WALL_PLACED,15,2,16,2},
+        (WALL){WALL_PLACED,6,8,5,8},
+        (WALL){WALL_PLACED,5,8,5,12},
+        (WALL){WALL_PLACED,0,12,10,12},
+        (WALL){WALL_PLACED,10,12,10,8},
+        (WALL){WALL_PLACED,10,8,8,8},
+        (WALL){WALL_PLACED,4,12,4,13},
+        (WALL){WALL_PLACED,4,15,4,21},
+        (WALL){WALL_PLACED,0,20,4,20},
+        (WALL){WALL_PLACED,0,24,4,24},
+        (WALL){WALL_PLACED,4,23,4,25},
+        (WALL){WALL_PLACED,4,27,4,28},
+        (WALL){WALL_PLACED,6,28,6,24},
+        (WALL){WALL_PLACED,6,22,6,18},
+        (WALL){WALL_PLACED,6,16,6,14},
+        (WALL){WALL_PLACED,6,14,10,14},
+        (WALL){WALL_PLACED,10,14,10,28},
+        (WALL){WALL_PLACED,6,21,10,21},
+        (WALL){WALL_PLACED,12,28,12,26},
+        (WALL){WALL_PLACED,12,24,12,20},
+        (WALL){WALL_PLACED,12,18,12,15},
+        (WALL){WALL_PLACED,12,16,16,16},
+        (WALL){WALL_PLACED,12,22,16,22}
+    };
+    int templateWallCount = 29;
+
+    for (short i = 0; i < templateWallCount; i++)
+    {
+        walls[i] = templateWalls[i];
+    }   
 
     for (short i = 0; i < 5; i++)
     {
         tokens[i].state = TOKEN_PLACED;
         tokens[i].x = i;
-        tokens[i].y = i;
-        tokens[i].width = 1;
-        tokens[i].height = 1;
+        tokens[i].y = i*3;
+        tokens[i].width = i % 3 + 1;
+        tokens[i].height = i % 3 + 1;
         tokens[i].bitConditions = 0u;
         tokens[i].color = PINK;
     }

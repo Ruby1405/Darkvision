@@ -46,6 +46,7 @@
             <div class="sideGrid">
                 <button onclick="wallChange()" >Toggle Wall Colour</button>
                 <button onclick="toggleMapMode()">Toggle Map Mode</button>
+                <button onclick="printWalls()">Print Walls</button>
             </div>
         </div>
 
@@ -89,6 +90,14 @@
                     null
                 );
                 console.log("Map mode toggled: " + result);
+            }
+            function printWalls() {
+                var result = Module.ccall(
+                    "PrintWalls",
+                    "boolean",
+                    null,
+                    null
+                );
             }
         </script>
     </body>
